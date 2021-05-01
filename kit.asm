@@ -1,6 +1,6 @@
-$NOMOD51	 ;to suppress the pre-defined addresses by keil
+$NOMOD51	                    ;to suppress the pre-defined addresses by keil
 $include (C8051F020.INC)		; to declare the device peripherals	with it's addresses
-ORG 0H					   ; to start writing the code from the base 0
+ORG 0H					        ; to start writing the code from the base 0
 
 
 ;diable the watch dog
@@ -14,33 +14,35 @@ MOV XBR0 , #00H
 MOV XBR1 , #00H
 MOV XBR2 , #040H  ; Cross bar enabled , weak Pull-up enabled 
 
-
 ;config,setup
-MOV P0MDOUT, #00h
+MOV P74OUT, #00001000B
 MOV P1MDOUT, #0FFh
 MOV P2MDOUT, #0FFh
 MOV P3MDOUT, #0FFh
 MOV R0,#3
-MOV R1,#3      
-MOV P2, #01H
+MOV R1,#3
+
+MOV A,P5
+ORL A, #00010000B
+MOV P5, A
 
 MAX EQU 10
 MIN EQU 0
 
 INIT:	
-	MOV R4,#10         
-	MOV DPTR, #400h
-	MOV A,#10
-	CLR C
-	SUBB A,R0
-	MOVC A,@A+DPTR
-	MOV P1,A			
-	AJMP COUNT
+    MOV R4,#10
+    MOV DPTR, #400h
+    MOV A,#10
+    CLR C
+    SUBB A,R0
+    MOVC A,@A+DPTR
+    MOV P1,A
+    AJMP COUNT
 
 START: 	
-	MOV R4,#10
-	MOV DPTR, #400h
-	AJMP COUNT
+    MOV R4,#10
+    MOV DPTR, #400h
+    AJMP COUNT
 
 MAIN:
 	DJNZ R4, COUNT
@@ -53,63 +55,68 @@ MAIN:
 	AJMP MAIN
 
 LED_TOGGLE:	
-	CLR A
-	MOV A, P2
-	CJNE A, #01H, RED_ON
-	RED_ON_END:
-	ACALL GREEN_ON
-	RET
+    CLR A
+    MOV A, P5	
+    ANL A, #00010000B
+    CJNE A, #00010000B, RED_ON
+    RED_ON_END:
+    ACALL GREEN_ON
+    RET
 
-RED_ON:	
-	MOV P2,#01H
-	AJMP LED_TOGGLE_END
+RED_ON:			
+    MOV A,P5
+    ORL A, #00010000B
+    MOV P5, A
+    AJMP LED_TOGGLE_END
 
-GREEN_ON:	
-	MOV P2, #02H
-	RET
+GREEN_ON:			
+    MOV A,P5
+    ORL A, #00100000B
+    MOV P5, A
+    RET
 
-RESTART:	
+RESTART:
 	MOV A,R1
 	MOV R0, A
 	AJMP INIT
 
 SWITCHS:
 	CLR A
-	MOV A, P0
+	MOV A, P4
 	ANL A, #00000001B
 	JNZ FAST
-	MOV A, P0
+	MOV A, P4
 	ANL A, #00000010B
 	JNZ MEDIUM
-	MOV A, P0
+	MOV A, P4
 	ANL A, #00000100B
 	JNZ SLOW
 	ACALL DEFULT_DELAY
 	SKIP_SPEED:
-		MOV A, P0
-		ANL A, #00001000B
+		MOV A, P5
+		ANL A, #00000001B
 		JZ INCRENENT
-		MOV A, P0
-		ANL A, #00010000B
+		MOV A, P5
+		ANL A, #00000010B
 		JZ DECREMENT
 	RET
+
 
 SLOW:
 	ACALL SLOW_DELAY
 	AJMP SKIP_SPEED
 MEDIUM:
-	ACALL DEFULT_DELAY 
+	ACALL DEFULT_DELAY
 	AJMP SKIP_SPEED
 FAST:
 	ACALL FAST_DELAY
 	AJMP SKIP_SPEED
 INCRENENT:
-	; MOV R7, #NOW
 	CJNE R1, #MAX, DO_INCREMENT
 	AJMP RESTART
 	DO_INCREMENT:
-		INC R1
-		AJMP RESTART
+        INC R1
+        AJMP RESTART
 	RET
 DECREMENT:
 	CJNE R1, #MIN, DO_DECREMENT
@@ -121,14 +128,14 @@ DECREMENT:
 
 COUNT:	CLR A
 		MOVC A,@A+DPTR
-		MOV P3,A
+		MOV P2,A
 		INC DPTR
 		AJMP END_COUNT
 
 FAST_DELAY:
 	MOV R7,#5
 	LOOP4:MOV R6,#200
-	LOOP5:MOV R5,#198
+		LOOP5:MOV R5,#198
 	LOOP6:DJNZ R5,LOOP6
 	DJNZ R6,LOOP5
 	DJNZ R7,LOOP4
@@ -154,4 +161,5 @@ SLOW_DELAY:
 
 ORG 400H
 DB 6FH,7FH,07H,7DH,6DH,66H,4FH,5BH,06H,3FH
+
 END
